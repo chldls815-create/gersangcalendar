@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>거상 이벤트 알리미</title>
+    <style>
+        /* 화면을 예쁘게 꾸며주는 CSS */
+        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 30px; background-color: #f4f4f9; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h1 { color: #333; }
+        .today { font-size: 1.2em; color: #666; margin-bottom: 20px; }
+        .event-box { background: #ffeaa7; padding: 20px; border-radius: 10px; font-size: 1.3em; font-weight: bold; color: #d63031; }
+        .all-events { margin-top: 30px; text-align: left; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .highlight { color: #d63031; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>거상 이벤트 알리미 ⏰</h1>
+    <div class="today" id="today-text">오늘은 무슨 요일일까요?</div>
+    <div class="event-box" id="event-text">이벤트를 불러오는 중...</div>
+
+    <div class="all-events">
+        <h3>📅 주간 일정 한눈에 보기</h3>
+        <ul id="all-events-list"></ul>
+    </div>
+</div>
+
+<script>
+    // 💡 여기에 거상 요일별 이벤트를 자유롭게 수정하세요!
+    const events = {
+        "일": ["백칠퀘스트/삼,사인검 제작 퀘", "재료 삼문의 삿갓 10개"],
+        "월": ["혈장 도전모드 초기화"],
+        "화": ["미궁 19시"],
+        "수": ["없음"],
+        "목": ["미궁 19시"],
+        "금": ["백칠퀘스트/삼인검 재료","재료 날카로운 금속 낫 5개,강철 날개 5개"],
+        "토": ["없음"]
+    };
+
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    const todayIndex = new Date().getDay(); // PC나 스마트폰의 오늘 요일 계산 (0:일 ~ 6:토)
+    const todayName = days[todayIndex];
+
+    // 1. 오늘 요일과 메인 이벤트 표시
+    document.getElementById("today-text").innerText = `오늘은 ${todayName}요일 입니다.`;
+    document.getElementById("event-text").innerText = events[todayName].join(" / ");
+
+    // 2. 아래쪽에 전체 일정 리스트 표시
+    const listElement = document.getElementById("all-events-list");
+    for (let day in events) {
+        let li = document.createElement("li");
+        li.innerHTML = `<strong>${day}요일:</strong> ${events[day].join(", ")}`;
+        
+        // 오늘 요일이면 빨간색으로 강조
+        if (day === todayName) {
+            li.classList.add("highlight");
+        }
+        listElement.appendChild(li);
+    }
+</script>
+
+</body>
+</html>
