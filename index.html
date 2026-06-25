@@ -5,16 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>거상 이벤트 알리미</title>
     <style>
-        /* 화면을 예쁘게 꾸며주는 CSS */
-        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 30px; background-color: #f4f4f9; }
+        /* 기본 스타일 */
+        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 30px; background-color: #f4f4f9; margin: 0; }
         .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
         h1 { color: #333; }
         .today { font-size: 1.2em; color: #666; margin-bottom: 20px; }
         .event-box { background: #ffeaa7; padding: 20px; border-radius: 10px; font-size: 1.3em; font-weight: bold; color: #d63031; }
+        
+        /* 리스트 스타일 (클릭 가능하게 변경) */
         .all-events { margin-top: 30px; text-align: left; }
         ul { list-style-type: none; padding: 0; }
-        li { padding: 10px 0; border-bottom: 1px solid #eee; }
-        .highlight { color: #d63031; font-weight: bold; }
+        li { padding: 15px 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; border-radius: 8px;}
+        li:hover { background-color: #f1f2f6; } /* 마우스 올렸을 때 색상 변화 */
+        .highlight { color: #d63031; font-weight: bold; background-color: #fff0f0; }
+        .click-hint { font-size: 0.8em; color: #888; float: right; margin-top: 3px; }
+
+        /* 모달(팝업창) 스타일 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: #fff; margin: 20vh auto; padding: 25px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; font-weight: bold; color: #aaa; cursor: pointer; }
+        .close-btn:hover { color: #333; }
+        #modal-image { max-width: 100%; border-radius: 10px; margin: 15px 0; display: none; /* 사진 없을땐 숨김 */ }
+        #modal-detail { color: #555; line-height: 1.5; font-size: 0.95em; text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -25,42 +37,101 @@
     <div class="event-box" id="event-text">이벤트를 불러오는 중...</div>
 
     <div class="all-events">
-        <h3>📅 주간 일정 한눈에 보기</h3>
+        <h3>📅 주간 일정 (클릭해서 상세보기)</h3>
         <ul id="all-events-list"></ul>
     </div>
 </div>
 
+<!-- 모달 (상세 내용 팝업창) -->
+<div id="eventModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2 id="modal-title">이벤트 제목</h2>
+        <!-- 사진이 들어갈 자리 -->
+        <img id="modal-image" src="" alt="이벤트 이미지">
+        <p id="modal-detail">상세 내용이 여기에 표시됩니다.</p>
+    </div>
+</div>
+
 <script>
-    // 💡 여기에 거상 요일별 이벤트를 자유롭게 수정하세요!
-    const events = {
-        "일": ["백칠퀘스트/삼,사인검 제작 퀘", "재료 삼문의 삿갓 10개"],
-        "월": ["혈장 도전모드 초기화"],
-        "화": ["미궁 19시"],
-        "수": ["test 입니다"],
-        "목": ["미궁 19시"],
-        "금": ["백칠퀘스트/삼인검 재료","재료 날카로운 금속 낫 5개,강철 날개 5개"],
-        "토": ["없음"]
+    // 💡 데이터 구조 변경: title(제목), detail(상세설명), image(사진 링크)
+    const eventsData = {
+        "일": {
+            title: "경험치 300% / 주막 50% 할인",
+            detail: "일요일은 사냥 달리는 날!\n- 전 서버 경험치 300% 적용\n- 주막 용병 이동 및 보관 비용 50% 할인\n- 놓치지 말고 본캐 렙업하세요!",
+            image: "https://via.placeholder.com/400x200/ffeaa7/d63031?text=Sunday+Event" // 임시 이미지 링크 (여기를 수정하세요)
+        },
+        "월": {
+            title: "신용도 2배 이벤트",
+            detail: "상단 임무나 주간 퀘스트를 깨고 신용도를 두 배로 받으세요.",
+            image: "" // 이미지가 없으면 빈칸으로 두면 됩니다.
+        },
+        "화": { title: "상단 연회 이벤트", detail: "상단 연회 참석 시 보상 상자 지급", image: "" },
+        "수": { title: "무도장 / 혈투의전장 초기화", detail: "수요일은 초기화 날입니다. 잊지 말고 도전 횟수를 소모하세요.", image: "" },
+        "목": { title: "거상 정기 점검", detail: "오전 10시 ~ 12시까지 정기 점검이 있습니다. 패치 노트를 확인하세요.", image: "" },
+        "금": { title: "금요일 깜짝 할인", detail: "캐시샵 특정 아이템 20% 할인 이벤트", image: "" },
+        "토": { title: "경험치 250% / 아이템 드랍률 상승", detail: "주말의 시작! 드랍률 상승 도발부를 사용하면 효과가 좋습니다.", image: "" }
     };
 
     const days = ["일", "월", "화", "수", "목", "금", "토"];
-    const todayIndex = new Date().getDay(); // PC나 스마트폰의 오늘 요일 계산 (0:일 ~ 6:토)
+    const todayIndex = new Date().getDay(); 
     const todayName = days[todayIndex];
 
     // 1. 오늘 요일과 메인 이벤트 표시
     document.getElementById("today-text").innerText = `오늘은 ${todayName}요일 입니다.`;
-    document.getElementById("event-text").innerText = events[todayName].join(" / ");
+    document.getElementById("event-text").innerText = eventsData[todayName].title;
 
-    // 2. 아래쪽에 전체 일정 리스트 표시
+    // 2. 아래쪽에 전체 일정 리스트 표시 및 클릭 이벤트 추가
     const listElement = document.getElementById("all-events-list");
-    for (let day in events) {
+    
+    days.forEach(day => {
         let li = document.createElement("li");
-        li.innerHTML = `<strong>${day}요일:</strong> ${events[day].join(", ")}`;
+        li.innerHTML = `<strong>${day}요일:</strong> ${eventsData[day].title} <span class="click-hint">👆</span>`;
         
-        // 오늘 요일이면 빨간색으로 강조
         if (day === todayName) {
             li.classList.add("highlight");
         }
+
+        // 🌟 클릭 시 모달 열기 이벤트
+        li.onclick = function() {
+            openModal(day);
+        };
+
         listElement.appendChild(li);
+    });
+
+    // 모달 제어 함수들
+    const modal = document.getElementById("eventModal");
+
+    function openModal(day) {
+        const data = eventsData[day];
+        document.getElementById("modal-title").innerText = `${day}요일: ${data.title}`;
+        
+        // 상세 내용 줄바꿈(\n) 처리
+        document.getElementById("modal-detail").innerHTML = data.detail.replace(/\n/g, "<br>");
+        
+        // 이미지 처리 (이미지 주소가 있으면 보여주고, 없으면 숨김)
+        const imgElement = document.getElementById("modal-image");
+        if (data.image !== "") {
+            imgElement.src = data.image;
+            imgElement.style.display = "block";
+        } else {
+            imgElement.style.display = "none";
+            imgElement.src = "";
+        }
+        
+        modal.style.display = "block";
+    }
+
+    function closeModal() {
+        modal.style.display = "none";
+    }
+
+    // 모달 바깥의 어두운 배경을 클릭해도 닫히게 설정
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            closeModal();
+        }
     }
 </script>
 
