@@ -70,7 +70,6 @@
         <select id="mission-mention">
             <option value="">멘션 안 함</option>
             <option value="354477071831007243">아휴속상해 호출</option>
-			<option value="326727835207335937">현무암 호출</option>
         </select>
 
         <select id="mission-time">
@@ -97,7 +96,7 @@
 <script>
     const eventsData = {
         "일": { title: "백칠 퀘스트 특수임무수행서 2장", detail: "삼,사인검 임무 /필요재료 : 삼문의 삿갓 10개", image: "" },
-        "월": { title: "혈장,도전모드 초기화 날 ", detail: "24:33분에 초기화", image: "" },
+        "월": { title: "혈장,도전모드 초기화 날", detail: "24:33분에 초기화", image: "" },
         "화": { title: "미궁", detail: "7시 시작", image: "" },
         "수": { title: "없음", detail: " ", image: "" },
         "목": { title: "미궁", detail: "7시 시작", image: "" },
@@ -147,9 +146,34 @@
         }
 
         const duration = parseInt(timeSelect.value); 
+		
+        // 🌟 파이썬 서버로 보낼 주문서 데이터 만들기
+        const orderData = {
+            mission_name: finalName,
+            time: duration,
+            mention: mentionSelect.value
+        };
+
+        // 🌟 파이썬 서버로 데이터 전송
+        fetch("https://[gersangalarm].pythonanywhere.com/start_timer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("서버 응답:", data.message);
+            // 파이썬 서버에 잘 접수되었음을 알리는 팝업 (원치 않으시면 지워도 됩니다)
+            alert("서버에 타이머가 등록되었습니다! 창을 닫아도 알림이 전송됩니다.");
+        })
+        .catch(err => {
+            console.error("서버 통신 실패:", err);
+            alert("파이썬 서버와 연결할 수 없습니다. (서버 창이 켜져 있는지 확인하세요)");
+        });		
+		
+        // HTML 화면에 리스트를 띄우기 위한 로컬 저장용 데이터
         const endTime = Date.now() + duration * 1000; 
 
-        // 💡 수정됨: notified: false 뒤에 콤마(,)가 누락되어 에러가 발생했던 부분 수정
         const newMission = {
             id: Date.now(),
             name: finalName,
@@ -200,8 +224,7 @@
                     mission.notified = true;
                     localStorage.setItem("gersang_missions", JSON.stringify(missions));
                     
-                    sendDiscordMessage(mission.name, mission.mention);
-                    
+                    // 💡 알림이 파이썬에서 날아가므로, HTML에서는 브라우저 팝업만 띄워줍니다.
                     setTimeout(() => {
                         alert(`🔔 ${mission.name} 임무가 완료되었습니다! 수령해주세요.`);
                     }, 100);
@@ -224,34 +247,7 @@
     setInterval(renderMissions, 1000);
     renderMissions();
     
-    // 💡 수정됨: 파라미터에 mentionStr를 추가하여 멘션 정보를 제대로 받아오도록 수정
-    function sendDiscordMessage(missionName, mentionStr) {
-        const webhookUrl = "https://discord.com/api/webhooks/1520066929711120446/sAZiHZG9pRiVb9TPuOghaOoFvjoYKUtiIy1sQ2bb7tSyfnIfuE7EzM_55GB2Y99tfjF9";
-        
-// 🌟 마법의 안전장치: 숫자만 들어오면 자동으로 <@ > 를 씌워줍니다!
-        let mentionText = "";
-        if (mentionStr === "@everyone") {
-            mentionText = "@everyone "; // 전체 멘션일 경우
-        } else if (mentionStr && mentionStr !== "") {
-            mentionText = `<@${mentionStr}> `; // 유저 ID(숫자)일 경우
-        }
-		
-        // 💡 수정됨: 메시지 내용(content) 앞부분에 mentionText 변수가 출력되도록 추가
-        const payload = {
-            content: `${mentionText}🔔 **주막 임무 완료!**\n${missionName} 임무 시간이 다 되었습니다. 얼른 게임에서 수령하세요!`,
-            username: "거상 주막 알리미", 
-            avatar_url: "https://via.placeholder.com/150/0984e3/ffffff?text=Alarm" 
-        };
-
-        fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        }).then(response => {
-            if(response.ok) console.log("디스코드 알림 전송 성공!");
-        }).catch(err => console.error("디스코드 전송 실패:", err));
-    }
-
+    // 임무에 맞춰 시간을 자동으로 선택해주는 함수
     function autoSelectTime() {
         const typeValue = document.getElementById("mission-type").value;
         const timeSelect = document.getElementById("mission-time");
