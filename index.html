@@ -6,7 +6,7 @@
     <title>거상 이벤트 & 주막 알리미</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; margin: 0; }
-        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 450px; margin: auto; margin-bottom: 20px; }
+        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 500px; margin: auto; margin-bottom: 20px; }
         h1, h2 { color: #333; margin-top: 0; }
         .today { font-size: 1.1em; color: #666; margin-bottom: 15px; }
         .event-box { background: #ffeaa7; padding: 15px; border-radius: 10px; font-size: 1.2em; font-weight: bold; color: #d63031; margin-bottom: 25px; }
@@ -22,9 +22,10 @@
         /* 주막 임무 스타일 */
         .input-group { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .input-group select, .input-group input, .input-group button { padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95em; box-sizing: border-box; }
-        .input-group select#mission-type { flex: 1; min-width: 100px; }
-        .input-group input#mission-detail { flex: 2; min-width: 120px; }
-        .input-group select#mission-time { flex: 1; min-width: 100px; }
+        .input-group select#mission-type { flex: 1.5; min-width: 120px; }
+        .input-group input#mission-detail { flex: 2; min-width: 100px; }
+        .input-group select#mission-mention { flex: 1.5; min-width: 120px; }
+        .input-group select#mission-time { flex: 1; min-width: 90px; }
         .input-group button { background: #0984e3; color: white; border: none; cursor: pointer; font-weight: bold; flex: 1; min-width: 60px; }
         .input-group button:hover { background: #74b9ff; }
         
@@ -59,18 +60,23 @@
     <div class="input-group">
         
         <select id="mission-type" onchange="autoSelectTime()">
-
             <option value="사인검/30시간">사인검/30시간</option>
             <option value="사인검/60시간">사인검/60시간</option>
             <option value="테스트">테스트</option>
         </select>
 
         <input type="text" id="mission-detail" placeholder="캐릭명 입력">
+        
+        <select id="mission-mention">
+            <option value="">멘션 안 함</option>
+            <option value="354477071831007243">아휴속상해 호출</option>
+			<option value="326727835207335937">현무암 호출</option>
+        </select>
 
         <select id="mission-time">
             <option value="108000">30시간</option>
             <option value="216000">60시간</option>
-			<option value="10">10초</option>
+            <option value="10">10초</option>
         </select>
         
         <button onclick="addMission()">시작</button>
@@ -133,6 +139,7 @@
         const typeSelect = document.getElementById("mission-type");
         const detailInput = document.getElementById("mission-detail");
         const timeSelect = document.getElementById("mission-time");
+        const mentionSelect = document.getElementById("mission-mention"); 
         
         let finalName = typeSelect.value;
         if (detailInput.value.trim() !== "") {
@@ -142,11 +149,13 @@
         const duration = parseInt(timeSelect.value); 
         const endTime = Date.now() + duration * 1000; 
 
+        // 💡 수정됨: notified: false 뒤에 콤마(,)가 누락되어 에러가 발생했던 부분 수정
         const newMission = {
             id: Date.now(),
             name: finalName,
             endTime: endTime,
-            notified: false
+            notified: false,
+            mention: mentionSelect.value
         };
 
         missions.push(newMission);
@@ -191,10 +200,8 @@
                     mission.notified = true;
                     localStorage.setItem("gersang_missions", JSON.stringify(missions));
                     
-                    // 🌟 수정된 부분: 디스코드 메시지를 먼저 쏘아보냅니다.
-                    sendDiscordMessage(mission.name);
+                    sendDiscordMessage(mission.name, mission.mention);
                     
-                    // 🌟 수정된 부분: setTimeout을 사용해 팝업창 실행을 아주 살짝(0.1초) 뒤로 미룹니다.
                     setTimeout(() => {
                         alert(`🔔 ${mission.name} 임무가 완료되었습니다! 수령해주세요.`);
                     }, 100);
@@ -217,11 +224,21 @@
     setInterval(renderMissions, 1000);
     renderMissions();
     
-    function sendDiscordMessage(missionName) {
+    // 💡 수정됨: 파라미터에 mentionStr를 추가하여 멘션 정보를 제대로 받아오도록 수정
+    function sendDiscordMessage(missionName, mentionStr) {
         const webhookUrl = "https://discord.com/api/webhooks/1520066929711120446/sAZiHZG9pRiVb9TPuOghaOoFvjoYKUtiIy1sQ2bb7tSyfnIfuE7EzM_55GB2Y99tfjF9";
         
+// 🌟 마법의 안전장치: 숫자만 들어오면 자동으로 <@ > 를 씌워줍니다!
+        let mentionText = "";
+        if (mentionStr === "@everyone") {
+            mentionText = "@everyone "; // 전체 멘션일 경우
+        } else if (mentionStr && mentionStr !== "") {
+            mentionText = `<@${mentionStr}> `; // 유저 ID(숫자)일 경우
+        }
+		
+        // 💡 수정됨: 메시지 내용(content) 앞부분에 mentionText 변수가 출력되도록 추가
         const payload = {
-            content: `🔔 **주막 임무 완료!**\n${missionName} 임무 시간이 다 되었습니다. 얼른 게임에서 수령하세요!`,
+            content: `${mentionText}🔔 **주막 임무 완료!**\n${missionName} 임무 시간이 다 되었습니다. 얼른 게임에서 수령하세요!`,
             username: "거상 주막 알리미", 
             avatar_url: "https://via.placeholder.com/150/0984e3/ffffff?text=Alarm" 
         };
