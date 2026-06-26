@@ -68,10 +68,9 @@
         <input type="text" id="mission-detail" placeholder="캐릭터명(아휴속상해)">
 
         <select id="mission-time">
-            <option value="10">10초</option>
-            <option value="7200">2시간</option>
-            <option value="14400">4시간</option>
-            <option value="28800">8시간</option>
+            <option value="108000">30시간</option>
+            <option value="216000">60시간</option>
+			<option value="10">10초</option>
         </select>
         
         <button onclick="addMission()">출발</button>
@@ -91,13 +90,13 @@
 
 <script>
     const eventsData = {
-        "일": { title: "경험치 300% / 주막 50% 할인", detail: "일요일 사냥 특화 날!\n- 전 서버 경험치 300%\n- 주막 용병 보관 비용 반값", image: "" },
-        "월": { title: "신용도 2배 이벤트", detail: "주간 퀘스트 및 상단 임무 수행 시 신용도 보상 2배 제공", image: "" },
-        "화": { title: "상단 연회 이벤트", detail: "연회 물품 소모 시 상단원 전체 버프 및 보상 상자 획득", image: "" },
-        "수": { title: "무도장 / 혈투의전장 초기화", detail: "주간 도전 횟수가 초기화되니 점검 전 반드시 정산하세요.", image: "" },
-        "목": { title: "거상 정기 점검", detail: "정기 패치 및 서버 안정화 작업 (보통 오전 진행)", image: "" },
-        "금": { title: "금요일 깜짝 할인", detail: "캐시샵 일부 아이템 한정 세일 진행", image: "" },
-        "토": { title: "경험치 250% / 드랍률 상승", detail: "주말 보너스 스프린트 단계 시작", image: "" }
+        "일": { title: "백칠 퀘스트 특수임무수행서 2장", detail: "삼,사인검 임무 /필요재료 : 삼문의 삿갓 10개", image: "" },
+        "월": { title: "혈장,도전모드 초기화 날 ", detail: "24:33분에 초기화", image: "" },
+        "화": { title: "미궁", detail: "7시 시작", image: "" },
+        "수": { title: "없음", detail: " ", image: "" },
+        "목": { title: "미궁", detail: "7시 시작", image: "" },
+        "금": { title: "백칠 퀘스트 철제검조각", detail: "삼인검 제작 재료,필요 재료 : 날카로운 금속 낫 5개 강철 날개 5 ", image: "" },
+        "토": { title: "없음", detail: "", image: "" }
     };
 
     const days = ["일", "월", "화", "수", "목", "금", "토"];
