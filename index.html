@@ -58,20 +58,21 @@
     <h2>🍶 주막 임무 교역소</h2>
     <div class="input-group">
         
+        <!-- 1. 임무 종류 선택 (onchange로 시간 자동 변경 기능 연결) -->
         <select id="mission-type" onchange="autoSelectTime()">
             <option value="테스트">테스트</option>
-            <option value="삼인검 임무">삼인검 임무</option>
-            <option value="마을 순찰">마을 순찰</option>
-            <option value="상단 호위">상단 호위</option>
+            <option value="사인검/30시간">사인검/30시간</option>
+            <option value="사인검/60시간">사인검/60시간</option>
         </select>
 
+        <!-- 2. 상세 이름 텍스트 입력창 -->
         <input type="text" id="mission-detail" placeholder="캐릭터명(아휴속상해)">
 
+        <!-- 3. 시간 선택 -->
         <select id="mission-time">
             <option value="10">10초</option>
-            <option value="7200">2시간</option>
-            <option value="14400">4시간</option>
-            <option value="28800">8시간</option>
+            <option value="108000">30시간</option>
+            <option value="216000">60시간</option>
         </select>
         
         <button onclick="addMission()">출발</button>
@@ -90,6 +91,7 @@
 </div>
 
 <script>
+    // 1. 요일별 이벤트 데이터
     const eventsData = {
         "일": { title: "백칠 퀘스트 특수임무수행서 2장", detail: "삼,사인검 임무 /필요재료 : 삼문의 삿갓 10개", image: "" },
         "월": { title: "혈장,도전모드 초기화 날 ", detail: "24:33분에 초기화", image: "" },
@@ -115,6 +117,7 @@
         listElement.appendChild(li);
     });
 
+    // 모달 제어
     const modal = document.getElementById("eventModal");
     function openModal(day) {
         const data = eventsData[day];
@@ -128,20 +131,25 @@
     function closeModal() { modal.style.display = "none"; }
     window.onclick = (e) => { if (e.target === modal) closeModal(); };
 
+    // ==========================================
+    // 2. 🌟 주막 임무 타이머 핵심 시스템 🌟
+    // ==========================================
     let missions = JSON.parse(localStorage.getItem("gersang_missions")) || [];
 
+    // 임무 추가 함수
     function addMission() {
         const typeSelect = document.getElementById("mission-type");
         const detailInput = document.getElementById("mission-detail");
         const timeSelect = document.getElementById("mission-time");
         
+        // 두 항목을 합쳐서 최종 이름을 만듭니다. (예: "[삼인검 임무] 캐릭터명")
         let finalName = typeSelect.value;
         if (detailInput.value.trim() !== "") {
             finalName = `[${typeSelect.value}] ${detailInput.value}`;
         }
 
-        const duration = parseInt(timeSelect.value); 
-        const endTime = Date.now() + duration * 1000; 
+        const duration = parseInt(timeSelect.value); // 소요 시간 (초)
+        const endTime = Date.now() + duration * 1000; // 종료 시각 계산 (밀리초)
 
         const newMission = {
             id: Date.now(),
@@ -153,19 +161,23 @@
         missions.push(newMission);
         saveAndRender();
         
+        // 다음 입력을 위해 텍스트 입력창만 비워줍니다.
         detailInput.value = ""; 
     }
 
+    // 임무 삭제 함수
     function deleteMission(id) {
         missions = missions.filter(m => m.id !== id);
         saveAndRender();
     }
 
+    // 데이터 저장 및 화면 갱신
     function saveAndRender() {
         localStorage.setItem("gersang_missions", JSON.stringify(missions));
         renderMissions();
     }
 
+    // 실시간 타이머 UI 그리기
     function renderMissions() {
         const list = document.getElementById("mission-list");
         list.innerHTML = "";
@@ -185,22 +197,21 @@
             let contentStr = "";
             
             if (timeLeft <= 0) {
+                // 임무 완료 상태
                 li.className += " completed";
                 contentStr = `<span><strong>[완료] ${mission.name}</strong> - 주막 복귀 완료!</span>`;
                 
+                // 브라우저 기본 알림음 또는 가벼운 경고창 (최초 1회만)
                 if (!mission.notified) {
                     mission.notified = true;
                     localStorage.setItem("gersang_missions", JSON.stringify(missions));
+                    alert(`🔔 ${mission.name} 임무가 완료되었습니다! 수령해주세요.`);
                     
-                    // 🌟 수정된 부분: 디스코드 메시지를 먼저 쏘아보냅니다.
+                    // 🌟 팝업창과 동시에 디스코드 알림 발송
                     sendDiscordMessage(mission.name);
-                    
-                    // 🌟 수정된 부분: setTimeout을 사용해 팝업창 실행을 아주 살짝(0.1초) 뒤로 미룹니다.
-                    setTimeout(() => {
-                        alert(`🔔 ${mission.name} 임무가 완료되었습니다! 수령해주세요.`);
-                    }, 100);
                 }
             } else {
+                // 시간 계산 (시:분:초)
                 const totalSeconds = Math.floor(timeLeft / 1000);
                 const hours = Math.floor(totalSeconds / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -215,18 +226,25 @@
         });
     }
 
+    // 1초마다 타이머 화면 갱신 수행
     setInterval(renderMissions, 1000);
+    
+    // 페이지 처음 열렸을 때 리스트 띄우기
     renderMissions();
     
+    // 디스코드 웹훅 전송 함수
     function sendDiscordMessage(missionName) {
+        // 입력하신 디스코드 웹훅 URL
         const webhookUrl = "https://discord.com/api/webhooks/1520066929711120446/sAZiHZG9pRiVb9TPuOghaOoFvjoYKUtiIy1sQ2bb7tSyfnIfuE7EzM_55GB2Y99tfjF9";
         
+        // 디스코드에 보낼 메시지 내용 구성
         const payload = {
             content: `🔔 **주막 임무 완료!**\n${missionName} 임무 시간이 다 되었습니다. 얼른 게임에서 수령하세요!`,
-            username: "거상 주막 알리미", 
-            avatar_url: "https://via.placeholder.com/150/0984e3/ffffff?text=Alarm" 
+            username: "거상 주막 알리미", // 디스코드에 표시될 봇 이름
+            avatar_url: "https://via.placeholder.com/150/0984e3/ffffff?text=Alarm" // 봇 프로필 사진 (선택)
         };
 
+        // fetch API를 사용해 디스코드로 데이터 전송
         fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -236,18 +254,20 @@
         }).catch(err => console.error("디스코드 전송 실패:", err));
     }
 
+    // 임무에 맞춰 시간을 자동으로 선택해주는 함수
     function autoSelectTime() {
         const typeValue = document.getElementById("mission-type").value;
         const timeSelect = document.getElementById("mission-time");
 
+        // 임무 이름에 따른 시간(초) 매칭
         if (typeValue === "테스트") {
-            timeSelect.value = "10"; 
+            timeSelect.value = "10"; // 10초
         } else if (typeValue === "삼인검 임무") {
-            timeSelect.value = "7200"; 
+            timeSelect.value = "7200"; // 2시간
         } else if (typeValue === "마을 순찰") {
-            timeSelect.value = "14400"; 
+            timeSelect.value = "14400"; // 4시간
         } else if (typeValue === "상단 호위") {
-            timeSelect.value = "28800"; 
+            timeSelect.value = "28800"; // 8시간
         }
     }
 </script>
