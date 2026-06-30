@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>거상 이벤트 & 주막 알리미</title>
+    <title>거상 이벤트 & 주막/공방 알리미</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; margin: 0; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 500px; margin: auto; margin-bottom: 20px; }
-        h1, h2 { color: #333; margin-top: 0; }
+        h1, h2 { color: #333; margin-top: 0; display: flex; justify-content: center; align-items: center; gap: 10px; }
         .today { font-size: 1.1em; color: #666; margin-bottom: 15px; }
         .event-box { background: #ffeaa7; padding: 15px; border-radius: 10px; font-size: 1.2em; font-weight: bold; color: #d63031; margin-bottom: 25px; }
         
@@ -19,26 +19,34 @@
         .highlight { color: #d63031; font-weight: bold; background-color: #fff0f0; }
         .click-hint { font-size: 0.8em; color: #888; float: right; }
 
-        /* 주막 임무 스타일 */
+        /* 입력 폼 공통 스타일 */
         .input-group { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .input-group select, .input-group input, .input-group button { padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95em; box-sizing: border-box; }
-        .input-group select#mission-type { flex: 1.5; min-width: 120px; }
-        .input-group input#mission-detail { flex: 2; min-width: 100px; }
-        .input-group select#mission-mention { flex: 1.5; min-width: 120px; }
-        .input-group select#mission-time { flex: 1; min-width: 90px; }
+        .input-group select { flex: 1.5; min-width: 100px; }
+        .input-group input { flex: 2; min-width: 100px; }
         .input-group button { background: #0984e3; color: white; border: none; cursor: pointer; font-weight: bold; flex: 1; min-width: 60px; }
         .input-group button:hover { background: #74b9ff; }
         
-        .mission-item { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #0984e3; }
-        .mission-item.completed { border-left-color: #2ed573; background: #e8f9f0; animation: blink 1s infinite alternate; }
+        .list-item { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #0984e3; }
+        .list-item.workshop { border-left: 5px solid #6c5ce7; }
+        .list-item.completed { border-left-color: #2ed573; background: #e8f9f0; animation: blink 1s infinite alternate; }
         .delete-btn { background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
         
-        /* 모달 스타일 */
+        /* 💡 추가된 정보 팝업 버튼 스타일 */
+        .info-btn { font-size: 0.65em; background-color: #636e72; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: normal; }
+        .info-btn:hover { background-color: #2d3436; }
+
+        /* 모달 공통 스타일 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
         .modal-content { background-color: #fff; margin: 20vh auto; padding: 25px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #aaa; }
+        
+        /* 요일별 이벤트 모달 내용 */
         #modal-image { max-width: 100%; border-radius: 10px; margin: 15px 0; display: none; }
         #modal-detail { color: #555; text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.95em; white-space: pre-line; }
+        
+        /* 정보 팝업창 내용 영역 스타일 */
+        .info-content { text-align: left; font-size: 0.95em; line-height: 1.6; color: #444; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; }
 
         @keyframes blink { from { background: #e8f9f0; } to { background: #fff; } }
     </style>
@@ -56,45 +64,94 @@
 </div>
 
 <div class="container">
-    <h2>🍶 주막 임무 알리미</h2>
+    <h2>🍶 주막 임무 알리미 <button class="info-btn" onclick="openModal('missionInfoModal')">임무별 소요 시간</button></h2>
     <div class="input-group">
-        
         <select id="mission-type" onchange="autoSelectTime()">
             <option value="사인검/30시간">사인검/30시간</option>
             <option value="사인검/60시간">사인검/60시간</option>
             <option value="테스트">테스트</option>
         </select>
-
         <input type="text" id="mission-detail" placeholder="캐릭명 입력">
-        
         <select id="mission-mention">
             <option value="">멘션 안 함</option>
             <option value="354477071831007243">아휴속상해 호출</option>
-			<option value="326727835207335937">현무암 호출</option>
         </select>
-
         <select id="mission-time">
             <option value="108000">30시간</option>
             <option value="216000">60시간</option>
             <option value="10">10초</option>
         </select>
-        
         <button onclick="addMission()">시작</button>
     </div>
-    
     <ul id="mission-list"></ul>
+</div>
+
+<div class="container">
+    <h2>🕌 인도 공방 알리미 <button class="info-btn" onclick="openModal('workshopInfoModal')">품목별 제작 기간</button></h2>
+    <div class="input-group">
+		<select id="workshop-type" onchange="autoSelectWorkshopTime()">
+            <option value="2일">2일</option>
+            <option value="3일">3일</option>
+			<option value="5일">5일</option>
+            <option value="테스트">테스트용</option>
+        </select>
+        <input type="text" id="workshop-detail" placeholder="아이템명/캐릭명">
+        <select id="workshop-mention">
+            <option value="">멘션 안 함</option>
+            <option value="354477071831007243">아휴속상해 호출</option>
+        </select>
+        <select id="workshop-time">
+            <option value="2">2일+1</option>
+            <option value="3">3일+1</option>
+            <option value="5">5일+1</option>
+            <option value="0">10초(테스트)</option>
+        </select>
+        <button onclick="addWorkshop()">시작</button>
+    </div>
+    <ul id="workshop-list"></ul>
 </div>
 
 <div id="eventModal" class="modal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <span class="close-btn" onclick="closeModal('eventModal')">&times;</span>
         <h3 id="modal-title">이벤트 제목</h3>
         <img id="modal-image" src="" alt="이벤트 이미지">
         <p id="modal-detail">상세 내용</p>
     </div>
 </div>
 
+<div id="missionInfoModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('missionInfoModal')">&times;</span>
+        <h3>📜 임무별 소요 시간</h3>
+        <div class="info-content">
+            - 초급 임무: 2시간<br>
+            - 중급 임무: 4시간<br>
+            - 사인검 임무: 30시간 / 60시간<br>
+            <br>
+            * 추가 메모를 여기에 적을 수 있습니다.
+            </div>
+    </div>
+</div>
+
+<div id="workshopInfoModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('workshopInfoModal')">&times;</span>
+        <h3>🛠️ 품목별 제작 기간</h3>
+        <div class="info-content">
+            - 2일 : 아이라바타의 상아<br>
+            - 3일 : 저격수석궁, 여의다라니부,천황봉,얼음구슬,길들인백사<br>
+            - 5일 : 화염의구슬,뇌전구슬,편복지팡이,야마지팡이,금장챠크람,칼리의 차크람,비슈누의 원반, 월아쿠크리,용두쿠크리,스칸다의쿠크리,뇌검,독각귀궁,적군모의창,시바의삼지창,<br>
+            <br>
+            * 인도 공방은 수령 예정일의 밤 12시(자정)에 완료됩니다.
+            </div>
+    </div>
+</div>
+
 <script>
+    // ==========================================
+    // 요일별 일정 코드
+    // ==========================================
     const eventsData = {
         "일": { title: "백칠 퀘스트 특수임무수행서 2장", detail: "삼,사인검 임무 /필요재료 : 삼문의 삿갓 10개", image: "" },
         "월": { title: "혈장,도전모드 초기화 날", detail: "24:33분에 초기화", image: "" },
@@ -116,25 +173,56 @@
         let li = document.createElement("li");
         li.innerHTML = `<strong>${day}요일:</strong> ${eventsData[day].title} <span class="click-hint">👆</span>`;
         if (day === todayName) li.classList.add("highlight");
-        li.onclick = () => openModal(day);
+        
+        // 요일 클릭 시 이벤트 모달 열기
+        li.onclick = () => {
+            const data = eventsData[day];
+            document.getElementById("modal-title").innerText = `${day}요일 상세 정보`;
+            document.getElementById("modal-detail").innerText = data.detail;
+            openModal('eventModal');
+        };
         listElement.appendChild(li);
     });
 
-    const modal = document.getElementById("eventModal");
-    function openModal(day) {
-        const data = eventsData[day];
-        document.getElementById("modal-title").innerText = `${day}요일 상세 정보`;
-        document.getElementById("modal-detail").innerText = data.detail;
-        const img = document.getElementById("modal-image");
-        if (data.image) { img.src = data.image; img.style.display = "block"; } 
-        else { img.style.display = "none"; }
-        modal.style.display = "block";
+    // 💡 통합된 모달 열기/닫기 제어 함수
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = "block";
     }
-    function closeModal() { modal.style.display = "none"; }
-    window.onclick = (e) => { if (e.target === modal) closeModal(); };
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+    }
+    
+    // 모달 바깥 배경 클릭 시 모든 모달 닫기
+    window.onclick = (e) => { 
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = "none";
+        }
+    };
 
+    // ==========================================
+    // 주막 & 공방 데이터 저장소
+    // ==========================================
     let missions = JSON.parse(localStorage.getItem("gersang_missions")) || [];
+    let workshops = JSON.parse(localStorage.getItem("gersang_workshops")) || [];
 
+    const PYTHON_SERVER_URL = "https://gersangalarm.pythonanywhere.com/start_timer";
+
+    function formatTimeLeft(totalSeconds) {
+        const d = Math.floor(totalSeconds / 86400);
+        const h = Math.floor((totalSeconds % 86400) / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        
+        let result = "";
+        if (d > 0) result += `${d}일 `;
+        if (h > 0 || d > 0) result += `${h}시간 `;
+        result += `${m}분 ${s}초 남음`;
+        return result;
+    }
+
+    // ==========================================
+    // 1. 주막 임무 로직
+    // ==========================================
     function addMission() {
         const typeSelect = document.getElementById("mission-type");
         const detailInput = document.getElementById("mission-detail");
@@ -145,122 +233,176 @@
         if (detailInput.value.trim() !== "") {
             finalName = `[${typeSelect.value}] ${detailInput.value}`;
         }
-
         const duration = parseInt(timeSelect.value); 
-		
-        // 🌟 파이썬 서버로 보낼 주문서 데이터 만들기
+        
         const orderData = {
             mission_name: finalName,
             time: duration,
             mention: mentionSelect.value
         };
 
-        // 🌟 파이썬 서버로 데이터 전송
-        fetch("https://gersangalarm.pythonanywhere.com/start_timer", {
+        fetch(PYTHON_SERVER_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(orderData)
         })
         .then(response => response.json())
-        .then(data => {
-            console.log("서버 응답:", data.message);
-            // 파이썬 서버에 잘 접수되었음을 알리는 팝업 (원치 않으시면 지워도 됩니다)
-            alert("서버에 타이머가 등록되었습니다! 창을 닫아도 알림이 전송됩니다.");
-        })
-        .catch(err => {
-            console.error("서버 통신 실패:", err);
-            alert("파이썬 서버와 연결할 수 없습니다. (서버 창이 켜져 있는지 확인하세요)");
-        });		
-		
-        // HTML 화면에 리스트를 띄우기 위한 로컬 저장용 데이터
-        const endTime = Date.now() + duration * 1000; 
-
-        const newMission = {
-            id: Date.now(),
-            name: finalName,
-            endTime: endTime,
-            notified: false,
-            mention: mentionSelect.value
-        };
-
-        missions.push(newMission);
-        saveAndRender();
+        .then(data => { alert("주막 임무가 서버에 등록되었습니다!"); })
+        .catch(err => { alert("파이썬 서버와 연결할 수 없습니다."); });		
         
+        const endTime = Date.now() + duration * 1000; 
+        missions.push({ id: Date.now(), name: finalName, endTime: endTime, notified: false, mention: mentionSelect.value });
+        localStorage.setItem("gersang_missions", JSON.stringify(missions));
         detailInput.value = ""; 
+        renderMissions();
     }
 
     function deleteMission(id) {
         missions = missions.filter(m => m.id !== id);
-        saveAndRender();
-    }
-
-    function saveAndRender() {
         localStorage.setItem("gersang_missions", JSON.stringify(missions));
         renderMissions();
     }
 
-    function renderMissions() {
-        const list = document.getElementById("mission-list");
-        list.innerHTML = "";
-
-        if (missions.length === 0) {
-            list.innerHTML = "<li style='text-align:center; color:#999; border:none;'>진행 중인 주막 임무가 없습니다.</li>";
-            return;
+    // ==========================================
+    // 2. 인도 공방 로직
+    // ==========================================
+    function addWorkshop() {
+        const typeSelect = document.getElementById("workshop-type");
+        const detailInput = document.getElementById("workshop-detail");
+        const timeSelect = document.getElementById("workshop-time");
+        const mentionSelect = document.getElementById("workshop-mention"); 
+        
+        let finalName = typeSelect.value;
+        if (detailInput.value.trim() !== "") {
+            finalName = `[${typeSelect.value}] ${detailInput.value}`;
         }
 
-        missions.forEach(mission => {
-            const now = Date.now();
-            const timeLeft = mission.endTime - now;
+        const daysInput = parseInt(timeSelect.value); 
+        let endTime;
+        let durationSeconds;
 
-            let li = document.createElement("li");
-            li.className = "mission-item";
+        if (daysInput === 0) {
+            durationSeconds = 10;
+            endTime = Date.now() + 10 * 1000;
+        } else {
+            let endDate = new Date();
+            endDate.setDate(endDate.getDate() + daysInput + 1);
+            endDate.setHours(0, 0, 0, 0); 
+            endTime = endDate.getTime();
+            durationSeconds = Math.floor((endTime - Date.now()) / 1000); 
+        }
 
-            let contentStr = "";
-            
-            if (timeLeft <= 0) {
-                li.className += " completed";
-                contentStr = `<span><strong>[완료] ${mission.name}</strong> - 주막 복귀 완료!</span>`;
+        const orderData = {
+            mission_name: finalName,
+            time: durationSeconds,
+            mention: mentionSelect.value
+        };
+
+        fetch(PYTHON_SERVER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(data => { alert("인도 공방 제작이 서버에 등록되었습니다!"); })
+        .catch(err => { alert("파이썬 서버와 연결할 수 없습니다."); });		
+
+        workshops.push({ id: Date.now(), name: finalName, endTime: endTime, notified: false, mention: mentionSelect.value });
+        localStorage.setItem("gersang_workshops", JSON.stringify(workshops));
+        detailInput.value = ""; 
+        renderMissions();
+    }
+
+    function deleteWorkshop(id) {
+        workshops = workshops.filter(w => w.id !== id);
+        localStorage.setItem("gersang_workshops", JSON.stringify(workshops));
+        renderMissions();
+    }
+
+    // ==========================================
+    // 3. 화면 UI 갱신 렌더링 함수
+    // ==========================================
+    function renderMissions() {
+        const missionList = document.getElementById("mission-list");
+        const workshopList = document.getElementById("workshop-list");
+        missionList.innerHTML = "";
+        workshopList.innerHTML = "";
+
+        if (missions.length === 0) {
+            missionList.innerHTML = "<li style='text-align:center; color:#999; border:none;'>진행 중인 주막 임무가 없습니다.</li>";
+        } else {
+            missions.forEach(mission => {
+                const timeLeft = mission.endTime - Date.now();
+                let li = document.createElement("li");
+                li.className = "list-item";
                 
-                if (!mission.notified) {
-                    mission.notified = true;
-                    localStorage.setItem("gersang_missions", JSON.stringify(missions));
-                    
-                    // 💡 알림이 파이썬에서 날아가므로, HTML에서는 브라우저 팝업만 띄워줍니다.
-                    setTimeout(() => {
-                        alert(`🔔 ${mission.name} 임무가 완료되었습니다! 수령해주세요.`);
-                    }, 100);
+                if (timeLeft <= 0) {
+                    li.className += " completed";
+                    li.innerHTML = `<span><strong>[완료] ${mission.name}</strong></span><button class="delete-btn" onclick="deleteMission(${mission.id})">삭제</button>`;
+                    if (!mission.notified) {
+                        mission.notified = true;
+                        localStorage.setItem("gersang_missions", JSON.stringify(missions));
+                        setTimeout(() => { alert(`🔔 ${mission.name} 임무가 완료되었습니다!`); }, 100);
+                    }
+                } else {
+                    li.innerHTML = `<span><strong>${mission.name}</strong> (${formatTimeLeft(Math.floor(timeLeft/1000))})</span><button class="delete-btn" onclick="deleteMission(${mission.id})">삭제</button>`;
                 }
-            } else {
-                const totalSeconds = Math.floor(timeLeft / 1000);
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-                
-                const timeString = `${hours > 0 ? hours + '시간 ' : ''}${minutes}분 ${seconds}초 남음`;
-                contentStr = `<span><strong>${mission.name}</strong> (${timeString})</span>`;
-            }
+                missionList.appendChild(li);
+            });
+        }
 
-            li.innerHTML = contentStr + `<button class="delete-btn" onclick="deleteMission(${mission.id})">삭제</button>`;
-            list.appendChild(li);
-        });
+        if (workshops.length === 0) {
+            workshopList.innerHTML = "<li style='text-align:center; color:#999; border:none;'>진행 중인 공방 제작이 없습니다.</li>";
+        } else {
+            workshops.forEach(workshop => {
+                const timeLeft = workshop.endTime - Date.now();
+                let li = document.createElement("li");
+                li.className = "list-item workshop";
+                
+                if (timeLeft <= 0) {
+                    li.className += " completed";
+                    li.innerHTML = `<span><strong>[완료] ${workshop.name}</strong> - 수령 가능!</span><button class="delete-btn" onclick="deleteWorkshop(${workshop.id})">삭제</button>`;
+                    if (!workshop.notified) {
+                        workshop.notified = true;
+                        localStorage.setItem("gersang_workshops", JSON.stringify(workshops));
+                        setTimeout(() => { alert(`🔔 ${workshop.name} 제작이 완료되었습니다!`); }, 100);
+                    }
+                } else {
+                    const readyDate = new Date(workshop.endTime);
+                    const dateStr = `${readyDate.getMonth()+1}/${readyDate.getDate()} 00시`;
+                    
+                    li.innerHTML = `<span><strong>${workshop.name}</strong><br><span style="font-size:0.85em; color:#666;">(${dateStr} 수령 / ${formatTimeLeft(Math.floor(timeLeft/1000))})</span></span><button class="delete-btn" onclick="deleteWorkshop(${workshop.id})">삭제</button>`;
+                }
+                workshopList.appendChild(li);
+            });
+        }
     }
 
     setInterval(renderMissions, 1000);
     renderMissions();
-    
-    // 임무에 맞춰 시간을 자동으로 선택해주는 함수
+
+// 1. 주막 임무용 자동 선택
     function autoSelectTime() {
         const typeValue = document.getElementById("mission-type").value;
         const timeSelect = document.getElementById("mission-time");
-
-        if (typeValue === "테스트") {
-            timeSelect.value = "10"; 
-        } else if (typeValue === "사인검/30시간") {
-            timeSelect.value = "108000"; 
-        } else if (typeValue === "사인검/60시간") {
-            timeSelect.value = "216000"; 
-        }
+        if (typeValue === "테스트") timeSelect.value = "10"; 
+        else if (typeValue === "사인검/30시간") timeSelect.value = "108000"; 
+        else if (typeValue === "사인검/60시간") timeSelect.value = "216000"; 
     }
+	
+    // 2. 공방 제작용 자동 선택 (이름을 autoSelectWorkshopTime으로 변경)
+    function autoSelectWorkshopTime() {
+        const typeValue = document.getElementById("workshop-type").value;
+        const timeSelect = document.getElementById("workshop-time");
+        
+        // 💡 HTML에서 공방 테스트의 value가 "0"이므로 여기도 "0"으로 맞췄습니다.
+        if (typeValue === "테스트") timeSelect.value = "0"; 
+        else if (typeValue === "2일") timeSelect.value = "2"; 
+        else if (typeValue === "3일") timeSelect.value = "3"; 
+        else if (typeValue === "5일") timeSelect.value = "5"; 
+    }
+	
+	
 </script>
 
 </body>
